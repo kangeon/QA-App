@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+{% autoescape true %}
+  <body>
+    {% for question in questions %}
+      <b>{{ question.author.nickname() }}</b> wrote:
+      <blockquote> {{ question.content }}</blockquote>
+      <b>Question ID: {{ question.key.id() }} </b> <br>
+    {% endfor %}
+  </body>
+</html>
+{% endautoescape %}

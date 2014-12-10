@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+{% autoescape true %}
+  <body>
+  {% if user_logged_on %}
+  <div align = "center">
+  <h3> What is your question? </h3>
+  <form action = "/" method = "post">
+    Title:<input type = "text" name = "qtitle" size = 82><br>
+    Question:
+    <textarea name = "qcontent" rows = 30 cols = 80></textarea><br>
+    Tags:<input type= "text" name = "qtags" size = 82><br>
+    <input type = "submit" value = "Cancel" name = "cancelq">
+    <input type = "submit" value = "Submit" name = "submitq">
+  </div>
+  {% else %}
+    <div align = 'center'>
+    <h3> Please log in to ask a question. <h3>
+    </div>
+  {% endif %}
+  </body>
+</html>
+{% endautoescape %}
+
