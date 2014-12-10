@@ -7,3 +7,8 @@ threadsafe: true
 handlers:
 - url: /.*
   script: OST.application
+
+libraries:
+- name: webapp2
+  version: latest
+
