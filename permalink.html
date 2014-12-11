@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+{% autoescape true %}
+  <body>
+      <font size = "5">
+      <b>{{ quest.title }}</b></a></font>
+      <font size = "3"><br>{{ quest.content }}</font>
+      <br>Tags:
+      {% for tag in quest.tags %}
+        #<a href = "/taglist?tag={{ tag }}">{{ tag }}</a>
+      {% endfor %}
+      <br><font size="1">Created: {{ quest.creationtime }}  
+      <br>Last Modified: {{ quest.modifiedtime }} </font>
+      <br>
+  </body>
+</html>
+{% endautoescape %}

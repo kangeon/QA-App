@@ -77,7 +77,10 @@ class MainPage(webapp2.RequestHandler):
         question.author = users.get_current_user()
         question.title = cgi.escape(self.request.get('qtitle'))
         question.content = cgi.escape(self.request.get('qcontent'))
-        #question.tags = cgi.escape(self.request.get('qtags'))
+        tagslist = cgi.escape(self.request.get('qtags')).split(',')
+        for tag in tagslist:
+          tag.strip()
+        question.tags = tagslist;
         question.put()
 
       curs = Cursor(urlsafe=self.request.get('cursor'))
@@ -109,13 +112,27 @@ class Create(webapp2.RequestHandler):
         user_logged_on = 1
       else:
         user_logged_on = 0
-      create_values = {
+      create_values =  {
         'user_logged_on' : user_logged_on,
       }
       create_template = JINJA_ENVIRONMENT.get_template('create.html')
       self.response.write(create_template.render(create_values))
 
+class ViewPermalink(webapp2.RequestHandler):
+    def get(self):
+      header(self)
+      qid = cgi.escape(self.request.get('qid'))
+      quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      permalink_values = {
+        'quest' : quest,
+      }
+      
+      permalink_template = JINJA_ENVIRONMENT.get_template('permalink.html')
+      self.response.write(permalink_template.render(permalink_values))
+      
+
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/create', Create),
+    ('/permalink', ViewPermalink),
 ], debug=True)
