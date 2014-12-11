@@ -35,6 +35,7 @@ def votelist_key(votelist_name=DEFAULT_VOTELIST_NAME):
 class Question(ndb.Model):
     """Models an individual question."""
     author = ndb.UserProperty()
+    authorID = ndb.StringProperty()
     title = ndb.StringProperty(indexed=False)
     content = ndb.TextProperty()
     creationtime = ndb.DateTimeProperty(auto_now_add=True)
@@ -104,6 +105,7 @@ class MainPage(webapp2.RequestHandler):
       if cgi.escape(self.request.get('submitq')):
         question = Question(parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
         question.author = users.get_current_user()
+        question.authorID = users.get_current_user().user_id()
         if cgi.escape(self.request.get('qtitle')) == '':
           question.title = DEFAULT_QUESTION_TITLE
         else:
@@ -170,8 +172,10 @@ class CreateAnswer(webapp2.RequestHandler):
 class View(webapp2.RequestHandler):
     def get(self):
       header(self)
+      current_userID = ''
       if users.get_current_user():
         user_logged_on = 1
+        current_userID = users.get_current_user().user_id()
       else:
         user_logged_on = 0
 
@@ -193,6 +197,7 @@ class View(webapp2.RequestHandler):
         'quest' : quest,
         'answers' : answers,
         'qvoteCount' : qvoteCount,
+        'current_userID' : current_userID,
       }
       
       view_template = JINJA_ENVIRONMENT.get_template('view.html')
@@ -200,13 +205,29 @@ class View(webapp2.RequestHandler):
 
     def post(self):
       header(self)
+      current_userID = ''
       if users.get_current_user():
         user_logged_on = 1
+        current_userID = users.get_current_user().user_id()
       else:
         user_logged_on = 0
 
       qid = cgi.escape(self.request.get('qid'))
       aid = cgi.escape(self.request.get('aid'))
+
+      #Edited a Question
+      if cgi.escape(self.request.get('submitq')):
+        question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+        if cgi.escape(self.request.get('qtitle')) == '':
+          question.title = DEFAULT_QUESTION_TITLE
+        else:
+          question.title = cgi.escape(self.request.get('qtitle'))
+        question.content = cgi.escape(self.request.get('qcontent'))
+        tagslist = cgi.escape(self.request.get('qtags')).split(',')
+        for idx in range(0, len(tagslist)):
+          tagslist[idx] = tagslist[idx].strip()
+        question.tags = tagslist;
+        question.put()
 
       #Voted on Question
       if cgi.escape(self.request.get('qupvote')):
@@ -304,6 +325,7 @@ class View(webapp2.RequestHandler):
         'quest' : quest,
         'answers' : answers,
         'qvoteCount' : qvoteCount,
+        'current_userID' : current_userID,
       }
       
       view_template = JINJA_ENVIRONMENT.get_template('view.html')
@@ -346,6 +368,28 @@ class ViewTaggedQuestions(webapp2.RequestHandler):
 
       taglist_template = JINJA_ENVIRONMENT.get_template('taglist.html')
       self.response.write(taglist_template.render(taglist_values))
+
+class EditQuestion(webapp2.RequestHandler):
+    def get(self):
+      header(self)
+      qid = cgi.escape(self.request.get('qid'))
+      question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      question_tags = ''
+      if users.get_current_user().user_id() != question.authorID:
+        user_has_permission = 0
+      else:
+        user_has_permission = 1
+        question_tags = ','.join(question.tags)
+
+      editq_values =  {
+        'user_has_permission' : user_has_permission,
+        'question' : question,
+        'question_tags' : question_tags,
+        'qid' : qid
+      }
+
+      editq_template = JINJA_ENVIRONMENT.get_template('editq.html')
+      self.response.write(editq_template.render(editq_values))
       
 application = webapp2.WSGIApplication([
     ('/', MainPage),
@@ -354,4 +398,5 @@ application = webapp2.WSGIApplication([
     ('/view', View),
     ('/permalink', ViewPermalink),
     ('/taglist', ViewTaggedQuestions),
+    ('/editq', EditQuestion),
 ], debug=True)
