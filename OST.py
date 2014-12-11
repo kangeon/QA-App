@@ -5,6 +5,9 @@ import urllib
 from google.appengine.api import users
 from google.appengine.ext import ndb
 from google.appengine.datastore.datastore_query import Cursor
+from google.appengine.ext import blobstore
+from google.appengine.ext.webapp import blobstore_handlers
+from google.appengine.api import images
 
 import jinja2
 import webapp2
@@ -69,10 +72,13 @@ def header(self):
 	   log_url = users.create_login_url("/")
 	   log_url_linktext = 'Login'
 	
+    upload_url = blobstore.create_upload_url('/upload')    
+    
     header_values = {
         'user_logged_on' : user_logged_on,
         'log_url' : log_url,
         'log_url_linktext' : log_url_linktext,
+        'upload_url' : upload_url,
     }
 	
     header_template = JINJA_ENVIRONMENT.get_template('header.html')
@@ -420,7 +426,22 @@ class EditAnswer(webapp2.RequestHandler):
 
       edita_template = JINJA_ENVIRONMENT.get_template('edita.html')
       self.response.write(edita_template.render(edita_values))
+
+class ImageUploadHandler(blobstore_handlers.BlobstoreUploadHandler):
+    def post(self):
+      header(self);
+      upload_images = self.get_uploads('image')
+      blob_info = upload_images[0]
+      image_url = images.get_serving_url(blob_info.key())
+
+      upload_values = { 
+        'image_url' : image_url
+      }
+    
+      upload_template = JINJA_ENVIRONMENT.get_template('upload.html')
+      self.response.write(upload_template.render(upload_values))
       
+
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/create', Create),
@@ -430,4 +451,5 @@ application = webapp2.WSGIApplication([
     ('/taglist', ViewTaggedQuestions),
     ('/editq', EditQuestion),
     ('/edita', EditAnswer),
+    ('/upload', ImageUploadHandler),
 ], debug=True)
