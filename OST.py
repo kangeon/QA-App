@@ -14,6 +14,10 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 	extensions=['jinja2.ext.autoescape'],
 	autoescape=True)
 
+"""Default Title for Question and Answer Entity when title is not specified"""
+DEFAULT_QUESTION_TITLE = '(No Title)'
+DEFAULT_ANSWER_TITLE = '(No Title)'
+
 """Questionlist and Answerlist entities for ancestor queries to ensure strong consistency"""
 DEFAULT_QUESTIONLIST_NAME = 'default_questionlist'
 DEFAULT_ANSWERLIST_NAME = 'default_answerlist'
@@ -100,7 +104,10 @@ class MainPage(webapp2.RequestHandler):
       if cgi.escape(self.request.get('submitq')):
         question = Question(parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
         question.author = users.get_current_user()
-        question.title = cgi.escape(self.request.get('qtitle'))
+        if not question.title:
+          question.title = DEFAULT_QUESTION_TITLE
+        else:
+          question.title = cgi.escape(self.request.get('qtitle'))
         question.content = cgi.escape(self.request.get('qcontent'))
         tagslist = cgi.escape(self.request.get('qtags')).split(',')
         for tag in tagslist:
@@ -259,7 +266,10 @@ class View(webapp2.RequestHandler):
       if cgi.escape(self.request.get('submita')):
         answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
         answer.author = users.get_current_user()
-        answer.title = cgi.escape(self.request.get('atitle'))
+        if not answer.title:
+          answer.title = DEFAULT_ANSWER_TITLE
+        else:
+          answer.title = cgi.escape(self.request.get('atitle'))
         answer.content = cgi.escape(self.request.get('acontent'))
         answer.questionID = int(qid)
         answer.voteCount = 0
