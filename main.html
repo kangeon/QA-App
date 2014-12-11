@@ -6,6 +6,9 @@
       <blockquote> {{ question.content }}</blockquote>
       <b>Question ID: {{ question.key.id() }} </b> <br>
     {% endfor %}
+    {% if more_pages %}
+      <a href = "/?cursor={{next_page_cursor }}">Next Page</a>
+    {% endif %}
   </body>
 </html>
 {% endautoescape %}
