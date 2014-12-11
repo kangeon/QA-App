@@ -2,15 +2,18 @@
 {% autoescape true %}
   <body>
   {% if user_logged_on %}
-  <div align = "center">
-  <h3> What is your question? </h3>
+  <div class = "formcontainer">
   <form action = "/" method = "post">
-    Question Title:<input type = "text" name = "qtitle" size = 82><br>
-    Question Content:
-    <textarea name = "qcontent" rows = 30 cols = 80></textarea><br>
-    Tags:<input type= "text" name = "qtags" size = 90><br>
+  <h3> What is your question? </h3>
+    Question Title:<br><input style="width:500px;" type = "text" name = "qtitle"><br>
+    Question Content:<br>
+    <textarea style="width:500px;" name = "qcontent" rows = 30></textarea><br>
+    Tags:<br><input style="width:500px;" type= "text" name = "qtags"><br>
+    Tags should be in comma delimited format.
+    <br>
     <input type = "submit" value = "Cancel" name = "cancelq">
     <input type = "submit" value = "Submit" name = "submitq">
+  </form>
   </div>
   {% else %}
     <div align = 'center'>

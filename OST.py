@@ -375,11 +375,14 @@ class EditQuestion(webapp2.RequestHandler):
       qid = cgi.escape(self.request.get('qid'))
       question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
       question_tags = ''
-      if users.get_current_user().user_id() != question.authorID:
-        user_has_permission = 0
+      if users.get_current_user():
+        if users.get_current_user().user_id() != question.authorID:
+          user_has_permission = 0
+        else:
+          user_has_permission = 1
+          question_tags = ','.join(question.tags)
       else:
-        user_has_permission = 1
-        question_tags = ','.join(question.tags)
+          user_has_permission = 0
 
       editq_values =  {
         'user_has_permission' : user_has_permission,
