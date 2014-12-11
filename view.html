@@ -8,7 +8,9 @@
       <br><a href = "/permalink?qid={{ quest.key.id() }}">permalink</a>
       <br>Tags:
       {% for tag in quest.tags %}
+        {% if tag != '' %}
         #<a href = "/taglist?tag={{ tag }}">{{ tag }}</a>
+        {% endif %}
       {% endfor %}
       <br><font size="1">Created: {{ quest.creationtime }}  
       <br>Last Modified: {{ quest.modifiedtime }} </font>

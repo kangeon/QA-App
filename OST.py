@@ -138,8 +138,6 @@ class MainPage(webapp2.RequestHandler):
       main_template = JINJA_ENVIRONMENT.get_template('main.html')
       self.response.write(main_template.render(main_values))
 
-
-
 class Create(webapp2.RequestHandler):
     def get(self):
       header(self)
@@ -423,7 +421,6 @@ class EditAnswer(webapp2.RequestHandler):
       edita_template = JINJA_ENVIRONMENT.get_template('edita.html')
       self.response.write(edita_template.render(edita_values))
       
-
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/create', Create),

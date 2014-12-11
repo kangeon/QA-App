@@ -9,7 +9,9 @@
       <br><a href = "/permalink?qid={{ question.key.id() }}">permalink</a>
       <br>Tags:
       {% for tag in question.tags %}
+        {% if tag != '' %}
         #<a href = "/taglist?tag={{ tag }}">{{ tag }}</a>
+        {% endif %}
       {% endfor %}
       <br><font size="1">Created: {{ question.creationtime }}  
       <br>Last Modified: {{ question.modifiedtime }} </font>
