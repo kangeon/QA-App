@@ -3,7 +3,7 @@
   <body>
     {% for question in questions %}
       <font size = "5"><a href = "/view?qid={{ question.key.id() }}">
-      <b>{{ question.title }}</b></a></font> by {{ question.author.nickname() }}
+      <b>{{ question.title }}</b></a></font> asked by {{ question.author.nickname() }}
       <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ question.content[0:500] }}</font>
       </div>
       <br><a href = "/permalink?qid={{ question.key.id() }}">permalink</a>

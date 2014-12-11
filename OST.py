@@ -45,6 +45,7 @@ class Question(ndb.Model):
 class Answer(ndb.Model):
     """Models an individual answer."""
     author = ndb.UserProperty()
+    authorID = ndb.StringProperty()
     title = ndb.StringProperty(indexed=False)
     content = ndb.TextProperty()
     creationtime = ndb.DateTimeProperty(auto_now_add=True)
@@ -285,15 +286,19 @@ class View(webapp2.RequestHandler):
 
       #Created a new answer
       if cgi.escape(self.request.get('submita')):
-        answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
-        answer.author = users.get_current_user()
+        if aid:
+          answer = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+        else:
+          answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+          answer.author = users.get_current_user()
+          answer.authorID = users.get_current_user().user_id()
+          answer.voteCount = 0
         if cgi.escape(self.request.get('atitle')) == '':
           answer.title = DEFAULT_ANSWER_TITLE
         else:
           answer.title = cgi.escape(self.request.get('atitle'))
         answer.content = cgi.escape(self.request.get('acontent'))
         answer.questionID = int(qid)
-        answer.voteCount = 0
         answer.put()
 
       quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
@@ -393,7 +398,32 @@ class EditQuestion(webapp2.RequestHandler):
 
       editq_template = JINJA_ENVIRONMENT.get_template('editq.html')
       self.response.write(editq_template.render(editq_values))
+
+class EditAnswer(webapp2.RequestHandler):
+    def get(self):
+      header(self)
+      aid = cgi.escape(self.request.get('aid'))
+      qid = cgi.escape(self.request.get('qid'))
+      answer = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+      if users.get_current_user():
+        if users.get_current_user().user_id() != answer.authorID:
+          user_has_permission = 0
+        else:
+          user_has_permission = 1
+      else:
+          user_has_permission = 0
+
+      edita_values =  {
+        'user_has_permission' : user_has_permission,
+        'answer' : answer,
+        'aid' : aid,
+        'qid' : qid,
+      }
+
+      edita_template = JINJA_ENVIRONMENT.get_template('edita.html')
+      self.response.write(edita_template.render(edita_values))
       
+
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/create', Create),
@@ -402,4 +432,5 @@ application = webapp2.WSGIApplication([
     ('/permalink', ViewPermalink),
     ('/taglist', ViewTaggedQuestions),
     ('/editq', EditQuestion),
+    ('/edita', EditAnswer),
 ], debug=True)

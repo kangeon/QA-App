@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+{% autoescape true %}
+  <body>
+  {% if user_has_permission %}
+  <div class = "formcontainer">
+  <h3> What is your answer? </h3>
+  <form action = "/view" method = "post">
+    Answer Title:<br><input style="width:500px;" type = "text" name = "atitle" size = 82 value = "{{ answer.title }}"><br>
+    Answer Content:<br>
+    <textarea style="width:500px;" name = "acontent" rows = 30 cols = 80>{{ answer.content }}</textarea><br>
+    <input type = "hidden" value = "{{ qid }}" name = "qid">
+    <input type = "hidden" value = "{{ aid }}" name = "aid">
+    <input type = "submit" value = "Cancel" name = "cancela">
+    <input type = "submit" value = "Submit" name = "submita">
+  </div>
+  {% else %}
+    <div align = 'center'>
+    <h3> You do not have permission to edit this answer. <h3>
+    </div>
+  {% endif %}
+  </body>
+</html>
+{% endautoescape %}
