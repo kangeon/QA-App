@@ -76,7 +76,7 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
       header(self)
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.creationtime)
+      questions_query = Question.query(ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
       questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_curs:
