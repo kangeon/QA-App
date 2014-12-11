@@ -2,21 +2,18 @@
 {% autoescape true %}
   <body>
     {% for question in questions %}
-      
       <font size = "5"><a href = "/view?qid={{ question.key.id() }}">
       <b>{{ question.title }}</b></a></font> by {{ question.author.nickname() }}
-      <font size = "3"><br>{{ question.content[0:500] }}</font>
+      <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ question.content[0:500] }}</font>
+      </div>
       <br><a href = "/permalink?qid={{ question.key.id() }}">permalink</a>
-      <br>{{ question.key.id() }}
       <br>Tags:
       {% for tag in question.tags %}
         #<a href = "/taglist?tag={{ tag }}">{{ tag }}</a>
       {% endfor %}
       <br><font size="1">Created: {{ question.creationtime }}  
       <br>Last Modified: {{ question.modifiedtime }} </font>
-      <br>
-      <br>
-      <br>
+      <hr style='border: 1px solid #000;' />
     {% endfor %}
     {% if more_pages %}
       <a href = "/?cursor={{next_page_cursor }}">Next Page</a>

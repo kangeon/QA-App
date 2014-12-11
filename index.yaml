@@ -10,6 +10,20 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Answer
+  ancestor: yes
+  properties:
+  - name: questionID
+  - name: modifiedtime
+    direction: desc
+
+- kind: Answer
+  ancestor: yes
+  properties:
+  - name: questionID
+  - name: voteCount
+    direction: desc
+
 - kind: Greeting
   ancestor: yes
   properties:
@@ -20,4 +34,10 @@ indexes:
   ancestor: yes
   properties:
   - name: creationtime
+    direction: desc
+
+- kind: Question
+  ancestor: yes
+  properties:
+  - name: modifiedtime
     direction: desc

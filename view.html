@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+{% autoescape true %}
+  <body>
+      <font size = "5">
+      <b>{{ quest.title }}</b></a></font>
+      <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ quest.content[0:500] }}</font>
+      </div>
+      <br><a href = "/permalink?qid={{ quest.key.id() }}">permalink</a>
+      <br>Tags:
+      {% for tag in quest.tags %}
+        #<a href = "/taglist?tag={{ tag }}">{{ tag }}</a>
+      {% endfor %}
+      <br><font size="1">Created: {{ quest.creationtime }}  
+      <br>Last Modified: {{ quest.modifiedtime }} </font>
+      <br>
+      <br>Current Vote Rating: {{ qvoteCount }}
+	  {% if user_logged_on %}
+        <form action = "/view" method = "post">
+          <input type="submit" value="Vote Up" name="qupvote">
+          <input type="submit" value="Vote Down" name="qdownvote">
+          <input type="hidden" value="{{ quest.key.id() }}" name="qid">
+        </form>
+	    <div align = 'center'> <h2> <a href = "/answer?qid={{ quest.key.id() }}"> Answer the question </a> </h2> </div>
+	  {% endif %}
+      <hr style='border: 1px solid #000;' />
+      {% for answer in answers %}
+        <font size = "5">
+        <b>{{ answer.title }}</b></a></font> by {{ answer.author.nickname() }}
+        <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ answer.content }}</font>
+        </div>
+        <br><font size="1">Created: {{ answer.creationtime }}  
+        <br>Last Modified: {{ answer.modifiedtime }} </font>
+        <br>
+        <br>Current Vote Rating: {{ answer.voteCount }}
+	    {% if user_logged_on %}
+          <form action = "/view" method = "post">
+            <input type="submit" value="Vote Up" name="aupvote">
+            <input type="submit" value="Vote Down" name="adownvote">
+            <input type="hidden" value="{{ quest.key.id() }}" name="qid">
+            <input type="hidden" value="{{ answer.key.id() }}" name="aid">
+          </form>
+	    {% endif %}
+        <hr style='border: 1px dashed black;' />
+      {% endfor %}
+  </body>
+</html>
+{% endautoescape %}

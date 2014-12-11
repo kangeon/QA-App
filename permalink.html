@@ -3,7 +3,8 @@
   <body>
       <font size = "5">
       <b>{{ quest.title }}</b></a></font>
-      <font size = "3"><br>{{ quest.content }}</font>
+      <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ quest.content }}</font>
+      </div>
       <br>Tags:
       {% for tag in quest.tags %}
         #<a href = "/taglist?tag={{ tag }}">{{ tag }}</a>

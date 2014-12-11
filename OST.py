@@ -14,10 +14,19 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 	extensions=['jinja2.ext.autoescape'],
 	autoescape=True)
 
+"""Questionlist and Answerlist entities for ancestor queries to ensure strong consistency"""
 DEFAULT_QUESTIONLIST_NAME = 'default_questionlist'
+DEFAULT_ANSWERLIST_NAME = 'default_answerlist'
+DEFAULT_VOTELIST_NAME = 'default_votelist'
 
 def questionlist_key(questionlist_name=DEFAULT_QUESTIONLIST_NAME):
     return ndb.Key('Questionlist', questionlist_name)
+
+def answerlist_key(answerlist_name=DEFAULT_ANSWERLIST_NAME):
+    return ndb.Key('Answerlist', answerlist_name)
+
+def votelist_key(votelist_name=DEFAULT_VOTELIST_NAME):
+    return ndb.Key('Votelist', votelist_name)
 
 class Question(ndb.Model):
     """Models an individual question."""
@@ -27,15 +36,31 @@ class Question(ndb.Model):
     creationtime = ndb.DateTimeProperty(auto_now_add=True)
     modifiedtime = ndb.DateTimeProperty(auto_now=True)
     tags = ndb.StringProperty(repeated=True)
+
+class Answer(ndb.Model):
+    """Models an individual answer."""
+    author = ndb.UserProperty()
+    title = ndb.StringProperty(indexed=False)
+    content = ndb.TextProperty()
+    creationtime = ndb.DateTimeProperty(auto_now_add=True)
+    modifiedtime = ndb.DateTimeProperty(auto_now=True)
+    questionID = ndb.IntegerProperty()
+    voteCount = ndb.IntegerProperty()
+
+class Vote(ndb.Model):
+    """Models an individual vote."""
+    voter = ndb.UserProperty()
+    entityID = ndb.IntegerProperty()
+    voteNumber = ndb.IntegerProperty()
 	
 def header(self):
     if users.get_current_user():
 	   user_logged_on = 1
-	   log_url = users.create_logout_url(self.request.uri)
+	   log_url = users.create_logout_url("/")
 	   log_url_linktext = 'Logout'
     else:
 	   user_logged_on = 0
-	   log_url = users.create_login_url(self.request.uri)
+	   log_url = users.create_login_url("/")
 	   log_url_linktext = 'Login'
 	
     header_values = {
@@ -84,7 +109,7 @@ class MainPage(webapp2.RequestHandler):
         question.put()
 
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.creationtime)
+      questions_query = Question.query(ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
       questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_curs:
@@ -118,6 +143,163 @@ class Create(webapp2.RequestHandler):
       create_template = JINJA_ENVIRONMENT.get_template('create.html')
       self.response.write(create_template.render(create_values))
 
+class CreateAnswer(webapp2.RequestHandler):
+    def get(self):
+      header(self)
+      if users.get_current_user():
+        user_logged_on = 1
+      else:
+        user_logged_on = 0
+      
+      qid = cgi.escape(self.request.get('qid'))
+      create_answer_values =  {
+        'user_logged_on' : user_logged_on,
+        'qid' : qid
+      }
+
+      create_answer_template = JINJA_ENVIRONMENT.get_template('createanswer.html')
+      self.response.write(create_answer_template.render(create_answer_values))      
+
+class View(webapp2.RequestHandler):
+    def get(self):
+      header(self)
+      if users.get_current_user():
+        user_logged_on = 1
+      else:
+        user_logged_on = 0
+
+      qid = cgi.escape(self.request.get('qid'))
+      quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+
+      qvotes_query = Vote.query(Vote.entityID == int(qid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
+      qvotes = qvotes_query.fetch()
+      qvoteCount = 0;  
+
+      for qvote in qvotes:
+        qvoteCount = qvoteCount + qvote.voteNumber
+      
+      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
+      answers = answers_query.fetch()
+
+      view_values = {
+        'user_logged_on' : user_logged_on,
+        'quest' : quest,
+        'answers' : answers,
+        'qvoteCount' : qvoteCount,
+      }
+      
+      view_template = JINJA_ENVIRONMENT.get_template('view.html')
+      self.response.write(view_template.render(view_values))     
+
+    def post(self):
+      header(self)
+      if users.get_current_user():
+        user_logged_on = 1
+      else:
+        user_logged_on = 0
+
+      qid = cgi.escape(self.request.get('qid'))
+      aid = cgi.escape(self.request.get('aid'))
+
+      #Voted on Question
+      if cgi.escape(self.request.get('qupvote')):
+        if Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(qid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get() == None:
+          qvote = Vote(parent=votelist_key(DEFAULT_VOTELIST_NAME))
+          qvote.voter = users.get_current_user()
+          qvote.entityID = int(qid)
+          qvote.voteNumber = 1
+          qvote.put()
+        else:
+          qvote = Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(qid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get() 
+          if qvote.voteNumber != 1:
+            qvote.voteNumber = 1
+            qvote.put()
+
+      if cgi.escape(self.request.get('qdownvote')):
+        if Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(qid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get() == None:
+          qvote = Vote(parent=votelist_key(DEFAULT_VOTELIST_NAME))
+          qvote.voter = users.get_current_user()
+          qvote.entityID = int(qid)
+          qvote.voteNumber = -1
+          qvote.put()
+        else:
+          qvote = Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(qid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get()
+          if qvote.voteNumber != -1:
+            qvote.voteNumber = -1
+            qvote.put()
+
+      #Voted on answer
+      if cgi.escape(self.request.get('aupvote')):
+        if Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(aid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get() == None:
+          avote = Vote(parent=votelist_key(DEFAULT_VOTELIST_NAME))
+          avote.voter = users.get_current_user()
+          avote.entityID = int(aid)
+          avote.voteNumber = 1
+          avote.put()
+        else:
+          avote = Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(aid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get() 
+          if avote.voteNumber != 1:
+            avote.voteNumber = 1
+            avote.put()
+
+      if cgi.escape(self.request.get('adownvote')):
+        if Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(aid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get() == None:
+          avote = Vote(parent=votelist_key(DEFAULT_VOTELIST_NAME))
+          avote.voter = users.get_current_user()
+          avote.entityID = int(aid)
+          avote.voteNumber = -1
+          avote.put()
+        else:
+          avote = Vote.query(ndb.AND(Vote.voter == users.get_current_user(), Vote.entityID == int(aid)),ancestor=votelist_key(DEFAULT_VOTELIST_NAME)).get()
+          if avote.voteNumber != -1:
+            avote.voteNumber = -1
+            avote.put()
+
+      #Created a new answer
+      if cgi.escape(self.request.get('submita')):
+        answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+        answer.author = users.get_current_user()
+        answer.title = cgi.escape(self.request.get('atitle'))
+        answer.content = cgi.escape(self.request.get('acontent'))
+        answer.questionID = int(qid)
+        answer.voteCount = 0
+        answer.put()
+
+      quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+
+      qvotes_query = Vote.query(Vote.entityID == int(qid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
+      qvotes = qvotes_query.fetch()
+      qvoteCount = 0;      
+
+      for qvote in qvotes:
+        qvoteCount = qvoteCount + qvote.voteNumber
+
+      if cgi.escape(self.request.get('adownvote')) or cgi.escape(self.request.get('aupvote')):
+        avotes_query = Vote.query(Vote.entityID == int(aid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
+        avotes = avotes_query.fetch()
+        avoteCount = 0;     
+
+        for avote in avotes:
+          avoteCount = avoteCount + avote.voteNumber
+
+        answer_to_update = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+        answer_to_update.voteCount = avoteCount
+        answer_to_update.put()
+
+      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
+      answers = answers_query.fetch()
+            
+      view_values = {
+        'user_logged_on' : user_logged_on,
+        'quest' : quest,
+        'answers' : answers,
+        'qvoteCount' : qvoteCount,
+      }
+      
+      view_template = JINJA_ENVIRONMENT.get_template('view.html')
+      self.response.write(view_template.render(view_values))    
+       
+
 class ViewPermalink(webapp2.RequestHandler):
     def get(self):
       header(self)
@@ -134,5 +316,7 @@ class ViewPermalink(webapp2.RequestHandler):
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/create', Create),
+    ('/answer', CreateAnswer),
+    ('/view', View),
     ('/permalink', ViewPermalink),
 ], debug=True)
