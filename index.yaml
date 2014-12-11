@@ -41,3 +41,10 @@ indexes:
   properties:
   - name: modifiedtime
     direction: desc
+
+- kind: Question
+  ancestor: yes
+  properties:
+  - name: tags
+  - name: modifiedtime
+    direction: desc

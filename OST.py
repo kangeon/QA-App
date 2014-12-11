@@ -110,8 +110,8 @@ class MainPage(webapp2.RequestHandler):
           question.title = cgi.escape(self.request.get('qtitle'))
         question.content = cgi.escape(self.request.get('qcontent'))
         tagslist = cgi.escape(self.request.get('qtags')).split(',')
-        for tag in tagslist:
-          tag.strip()
+        for idx in range(0, len(tagslist)):
+          tagslist[idx] = tagslist[idx].strip()
         question.tags = tagslist;
         question.put()
 
@@ -321,12 +321,36 @@ class ViewPermalink(webapp2.RequestHandler):
       
       permalink_template = JINJA_ENVIRONMENT.get_template('permalink.html')
       self.response.write(permalink_template.render(permalink_values))
-      
 
+class ViewTaggedQuestions(webapp2.RequestHandler):
+    def get(self):
+      header(self)
+      tag = cgi.escape(self.request.get('tag'))
+      curs = Cursor(urlsafe=self.request.get('cursor'))
+      questions_query = Question.query(Question.tags == tag, ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
+      questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
+
+      if more and next_curs:
+        more_pages = 1
+        next_page_cursor = next_curs.urlsafe()
+      else:
+        more_pages = 0
+        next_page_cursor = ''
+    
+      taglist_values = {
+        'questions' : questions,
+        'next_page_cursor' : next_page_cursor,
+        'more_pages' : more_pages,
+      }
+
+      taglist_template = JINJA_ENVIRONMENT.get_template('taglist.html')
+      self.response.write(taglist_template.render(taglist_values))
+      
 application = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/create', Create),
     ('/answer', CreateAnswer),
     ('/view', View),
     ('/permalink', ViewPermalink),
+    ('/taglist', ViewTaggedQuestions),
 ], debug=True)
