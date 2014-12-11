@@ -104,7 +104,7 @@ class MainPage(webapp2.RequestHandler):
       if cgi.escape(self.request.get('submitq')):
         question = Question(parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
         question.author = users.get_current_user()
-        if not question.title:
+        if cgi.escape(self.request.get('qtitle')) == '':
           question.title = DEFAULT_QUESTION_TITLE
         else:
           question.title = cgi.escape(self.request.get('qtitle'))
@@ -266,7 +266,7 @@ class View(webapp2.RequestHandler):
       if cgi.escape(self.request.get('submita')):
         answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
         answer.author = users.get_current_user()
-        if not answer.title:
+        if cgi.escape(self.request.get('atitle')) == '':
           answer.title = DEFAULT_ANSWER_TITLE
         else:
           answer.title = cgi.escape(self.request.get('atitle'))
@@ -328,11 +328,11 @@ class ViewTaggedQuestions(webapp2.RequestHandler):
       tag = cgi.escape(self.request.get('tag'))
       curs = Cursor(urlsafe=self.request.get('cursor'))
       questions_query = Question.query(Question.tags == tag, ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
-      questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
+      questions, next_tag_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
-      if more and next_curs:
+      if more and next_tag_curs:
         more_pages = 1
-        next_page_cursor = next_curs.urlsafe()
+        next_page_cursor = next_tag_curs.urlsafe()
       else:
         more_pages = 0
         next_page_cursor = ''
@@ -341,6 +341,7 @@ class ViewTaggedQuestions(webapp2.RequestHandler):
         'questions' : questions,
         'next_page_cursor' : next_page_cursor,
         'more_pages' : more_pages,
+        'current_tag' : tag,
       }
 
       taglist_template = JINJA_ENVIRONMENT.get_template('taglist.html')
