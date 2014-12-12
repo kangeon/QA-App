@@ -3,6 +3,9 @@
   <body>
       <font size = "5">
       <b>{{ quest.title }}</b></a></font> asked by {{ quest.author.nickname() }}
+      {% if quest.authorID == current_userID %}
+      <a href = "/editq?qid={{ quest.key.id() }}">Edit</a>
+	  {% endif %}
       <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ quest.content[0:500] }}</font>
       </div>
       <br><a href = "/permalink?qid={{ quest.key.id() }}">permalink</a>
@@ -14,9 +17,7 @@
       {% endfor %}
       <br><font size="1">Created: {{ quest.creationtime }}  
       <br>Last Modified: {{ quest.modifiedtime }} </font>
-      {% if quest.authorID == current_userID %}
-      <br><a href = "/editq?qid={{ quest.key.id() }}">Edit Your Question</a>
-	  {% endif %}
+      <br><a href = "/rss?qid={{ quest.key.id() }}"> RSS Link </a>
       <br>
       <br>Current Vote Rating: {{ qvoteCount }}
 	  {% if user_logged_on %}
@@ -31,13 +32,13 @@
       {% for answer in answers %}
         <font size = "5">
         <b>{{ answer.title }}</b></a></font> answered by {{ answer.author.nickname() }}
+        {% if answer.authorID == current_userID %}
+        <a href = "/edita?aid={{ answer.key.id() }}&qid={{ quest.key.id() }}">Edit Your Answer</a>
+	    {% endif %}
         <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ answer.content }}</font>
         </div>
         <br><font size="1">Created: {{ answer.creationtime }}  
         <br>Last Modified: {{ answer.modifiedtime }} </font>
-        {% if quest.authorID == current_userID %}
-        <br><a href = "/edita?aid={{ answer.key.id() }}&qid={{ quest.key.id() }}">Edit Your Answer</a>
-	    {% endif %}
         <br>
         <br>Current Vote Rating: {{ answer.voteCount }}
 	    {% if user_logged_on %}
