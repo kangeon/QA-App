@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+{% autoescape true %}
+<rss version="2.0">
+<channel>
+ <title>{{ question.title }}</title>
+ <author>{{ question.author.email() }}</author>
+ <description>{{ question.content }}</description>
+ <link>http://www.example.com/view?qid={{ question.key.id() }}</link>
+ 
+ {% for answer in answers %}
+ <item>
+  <title>{{ answer.title }}</title>
+  <author>{{ answer.author.email() }}</author>
+  <description>{{ answer.content }}</description>
+  <link>http://www.example.com/blog/view?qid={{ question.key.id() }}</link>
+ </item>
+ {% endfor %} 
+</channel>
+</rss>
+{% endautoescape %}

@@ -26,14 +26,14 @@
           <input type="submit" value="Vote Down" name="qdownvote">
           <input type="hidden" value="{{ quest.key.id() }}" name="qid">
         </form>
-	    <div align = 'center'> <h2> <a href = "/answer?qid={{ quest.key.id() }}"> Answer the question </a> </h2> </div>
+	    <div align = 'left'> <h2> <a href = "/answer?qid={{ quest.key.id() }}"> Answer the question </a> </h2> </div>
 	  {% endif %}
       <hr style='border: 1px solid #000;' />
       {% for answer in answers %}
         <font size = "5">
         <b>{{ answer.title }}</b></a></font> answered by {{ answer.author.nickname() }}
         {% if answer.authorID == current_userID %}
-        <a href = "/edita?aid={{ answer.key.id() }}&qid={{ quest.key.id() }}">Edit Your Answer</a>
+        <a href = "/edita?aid={{ answer.key.id() }}&qid={{ quest.key.id() }}">Edit</a>
 	    {% endif %}
         <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ answer.content }}</font>
         </div>

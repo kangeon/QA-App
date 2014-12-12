@@ -429,18 +429,41 @@ class EditAnswer(webapp2.RequestHandler):
 
 class ImageUploadHandler(blobstore_handlers.BlobstoreUploadHandler):
     def post(self):
-      header(self);
+      header(self)
       upload_images = self.get_uploads('image')
       blob_info = upload_images[0]
       image_url = images.get_serving_url(blob_info.key())
 
       upload_values = { 
-        'image_url' : image_url
+        'image_url' : image_url,
       }
     
       upload_template = JINJA_ENVIRONMENT.get_template('upload.html')
       self.response.write(upload_template.render(upload_values))
       
+class RSSHandler(webapp2.RequestHandler):
+    def get(self):
+      self.response.headers['Content-Type'] = 'text/xml'
+      qid = cgi.escape(self.request.get('qid'))
+      question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
+      answers = answers_query.fetch()
+
+      qvotes_query = Vote.query(Vote.entityID == int(qid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
+      qvotes = qvotes_query.fetch()
+      qvoteCount = 0;      
+
+      for qvote in qvotes:
+        qvoteCount = qvoteCount + qvote.voteNumber
+      
+      rss_values = {
+        'question' : question,
+        'answers' : answers,
+        'qvoteCount' : qvoteCount,
+      }
+
+      rss_template = JINJA_ENVIRONMENT.get_template('rss.xml')
+      self.response.write(rss_template.render(rss_values))
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
@@ -452,4 +475,5 @@ application = webapp2.WSGIApplication([
     ('/editq', EditQuestion),
     ('/edita', EditAnswer),
     ('/upload', ImageUploadHandler),
+    ('/rss', RSSHandler),
 ], debug=True)
