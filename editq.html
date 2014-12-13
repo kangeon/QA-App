@@ -7,7 +7,7 @@
   <form action = "/view" method = "post">
     Question Title:<br><input style="width:500px;" type = "text" name = "qtitle" size = 82 value = "{{ question.title }}"><br>
     Question Content:<br>
-    <textarea style="width:500px;" name = "qcontent" rows = 30 cols = 80>{{ question.content }}</textarea><br>
+    <textarea style="width:500px;" name = "qcontent" rows = 30 cols = 80>{{ question_content }}</textarea><br>
     Tags:<br><input style="width:500px;" type= "text" name = "qtags" size = 90 value = "{{ question_tags }}"><br>
     <input type = "hidden" value = "{{ qid }}" name = "qid">
     <input type = "submit" value = "Cancel" name = "cancelq">

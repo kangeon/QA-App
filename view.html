@@ -6,7 +6,7 @@
       {% if quest.authorID == current_userID %}
       <a href = "/editq?qid={{ quest.key.id() }}">Edit</a>
 	  {% endif %}
-      <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ quest.content[0:500] }}</font>
+      <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ quest.content[0:500]|safe }}</font>
       </div>
       <br><a href = "/permalink?qid={{ quest.key.id() }}">permalink</a>
       <br>Tags:
@@ -35,7 +35,7 @@
         {% if answer.authorID == current_userID %}
         <a href = "/edita?aid={{ answer.key.id() }}&qid={{ quest.key.id() }}">Edit</a>
 	    {% endif %}
-        <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ answer.content }}</font>
+        <div style="width: 500px; word-wrap: break-word;"><font size = "3"><br>{{ answer.content|safe }}</font>
         </div>
         <br><font size="1">Created: {{ answer.creationtime }}  
         <br>Last Modified: {{ answer.modifiedtime }} </font>

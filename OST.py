@@ -1,6 +1,7 @@
 import cgi
 import os
 import urllib
+import re
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -16,6 +17,16 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
 	extensions=['jinja2.ext.autoescape'],
 	autoescape=True)
+
+def convertLinks(content):
+  content = re.sub(r'(https?://\S+)', r'<a href="\g<1>">\g<1></a>', content)
+  content = re.sub(r'<a href="(https?://\S+\.(jpg|png|gif))">\S+</a>', r'<img src="\g<1>", width=500>', content)
+  return content
+
+def unconvertLinks(content):
+  content = re.sub(r'<a href="(https?://\S+)">\1</a>', r'\g<1>', content)
+  content = re.sub(r'<img src="(https?://\S+\.(jpg|png|gif))", width=500>', r'\g<1>', content)
+  return content
 
 """Default Title for Question and Answer Entity when title is not specified"""
 DEFAULT_QUESTION_TITLE = '(No Title)'
@@ -117,7 +128,8 @@ class MainPage(webapp2.RequestHandler):
           question.title = DEFAULT_QUESTION_TITLE
         else:
           question.title = cgi.escape(self.request.get('qtitle'))
-        question.content = cgi.escape(self.request.get('qcontent'))
+        content = cgi.escape(self.request.get('qcontent'))
+        question.content = convertLinks(content)
         tagslist = cgi.escape(self.request.get('qtags')).split(',')
         for idx in range(0, len(tagslist)):
           tagslist[idx] = tagslist[idx].strip()
@@ -227,7 +239,8 @@ class View(webapp2.RequestHandler):
           question.title = DEFAULT_QUESTION_TITLE
         else:
           question.title = cgi.escape(self.request.get('qtitle'))
-        question.content = cgi.escape(self.request.get('qcontent'))
+        content = cgi.escape(self.request.get('qcontent'))
+        question.content = convertLinks(content)
         tagslist = cgi.escape(self.request.get('qtags')).split(',')
         for idx in range(0, len(tagslist)):
           tagslist[idx] = tagslist[idx].strip()
@@ -288,10 +301,12 @@ class View(webapp2.RequestHandler):
             avote.voteNumber = -1
             avote.put()
 
-      #Created a new answer
+      #Created or modified an answer
       if cgi.escape(self.request.get('submita')):
+        #Modified an answer
         if aid:
           answer = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+        #Created a new answer
         else:
           answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
           answer.author = users.get_current_user()
@@ -301,7 +316,8 @@ class View(webapp2.RequestHandler):
           answer.title = DEFAULT_ANSWER_TITLE
         else:
           answer.title = cgi.escape(self.request.get('atitle'))
-        answer.content = cgi.escape(self.request.get('acontent'))
+        content = cgi.escape(self.request.get('acontent'))
+        answer.content = convertLinks(content)
         answer.questionID = int(qid)
         answer.put()
 
@@ -384,6 +400,7 @@ class EditQuestion(webapp2.RequestHandler):
       qid = cgi.escape(self.request.get('qid'))
       question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
       question_tags = ''
+      question_content = unconvertLinks(question.content)
       if users.get_current_user():
         if users.get_current_user().user_id() != question.authorID:
           user_has_permission = 0
@@ -397,7 +414,8 @@ class EditQuestion(webapp2.RequestHandler):
         'user_has_permission' : user_has_permission,
         'question' : question,
         'question_tags' : question_tags,
-        'qid' : qid
+        'qid' : qid,
+        'question_content' : question_content,
       }
 
       editq_template = JINJA_ENVIRONMENT.get_template('editq.html')
@@ -409,6 +427,7 @@ class EditAnswer(webapp2.RequestHandler):
       aid = cgi.escape(self.request.get('aid'))
       qid = cgi.escape(self.request.get('qid'))
       answer = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+      answer_content = unconvertLinks(answer.content)
       if users.get_current_user():
         if users.get_current_user().user_id() != answer.authorID:
           user_has_permission = 0
@@ -422,6 +441,7 @@ class EditAnswer(webapp2.RequestHandler):
         'answer' : answer,
         'aid' : aid,
         'qid' : qid,
+        'answer_content' : answer_content,
       }
 
       edita_template = JINJA_ENVIRONMENT.get_template('edita.html')
@@ -448,6 +468,7 @@ class RSSHandler(webapp2.RequestHandler):
       question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
       answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
       answers = answers_query.fetch()
+      site_url = self.request.host_url
 
       qvotes_query = Vote.query(Vote.entityID == int(qid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
       qvotes = qvotes_query.fetch()
@@ -460,6 +481,7 @@ class RSSHandler(webapp2.RequestHandler):
         'question' : question,
         'answers' : answers,
         'qvoteCount' : qvoteCount,
+        'site_url' : site_url,
       }
 
       rss_template = JINJA_ENVIRONMENT.get_template('rss.xml')
