@@ -32,19 +32,15 @@ def unconvertLinks(content):
 DEFAULT_QUESTION_TITLE = '(No Title)'
 DEFAULT_ANSWER_TITLE = '(No Title)'
 
-"""Questionlist and Answerlist entities for ancestor queries to ensure strong consistency"""
-DEFAULT_QUESTIONLIST_NAME = 'default_questionlist'
-DEFAULT_ANSWERLIST_NAME = 'default_answerlist'
+"""Setup ancestors for ancestor queries to ensure strong consistency"""
 DEFAULT_VOTELIST_NAME = 'default_votelist'
-
-def questionlist_key(questionlist_name=DEFAULT_QUESTIONLIST_NAME):
-    return ndb.Key('Questionlist', questionlist_name)
-
-def answerlist_key(answerlist_name=DEFAULT_ANSWERLIST_NAME):
-    return ndb.Key('Answerlist', answerlist_name)
+DEFAULT_QALIST_NAME = 'default_qalist'
 
 def votelist_key(votelist_name=DEFAULT_VOTELIST_NAME):
     return ndb.Key('Votelist', votelist_name)
+
+def qalist_key(qalist_name=DEFAULT_QALIST_NAME):
+    return ndb.Key('QAlist', qalist_name)
 
 class Question(ndb.Model):
     """Models an individual question."""
@@ -99,7 +95,7 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
       header(self)
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
+      questions_query = Question.query(ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.modifiedtime)
       questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_curs:
@@ -121,7 +117,7 @@ class MainPage(webapp2.RequestHandler):
     def post(self):
       header(self)
       if cgi.escape(self.request.get('submitq')):
-        question = Question(parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+        question = Question(parent=qalist_key(DEFAULT_QALIST_NAME))
         question.author = users.get_current_user()
         question.authorID = users.get_current_user().user_id()
         if cgi.escape(self.request.get('qtitle')) == '':
@@ -137,7 +133,7 @@ class MainPage(webapp2.RequestHandler):
         question.put()
 
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
+      questions_query = Question.query(ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.modifiedtime)
       questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_curs:
@@ -197,7 +193,7 @@ class View(webapp2.RequestHandler):
         user_logged_on = 0
 
       qid = cgi.escape(self.request.get('qid'))
-      quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      quest = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
 
       qvotes_query = Vote.query(Vote.entityID == int(qid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
       qvotes = qvotes_query.fetch()
@@ -206,7 +202,7 @@ class View(webapp2.RequestHandler):
       for qvote in qvotes:
         qvoteCount = qvoteCount + qvote.voteNumber
       
-      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
+      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Answer.voteCount)
       answers = answers_query.fetch()
 
       view_values = {
@@ -234,7 +230,7 @@ class View(webapp2.RequestHandler):
 
       #Edited a Question
       if cgi.escape(self.request.get('submitq')):
-        question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+        question = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
         if cgi.escape(self.request.get('qtitle')) == '':
           question.title = DEFAULT_QUESTION_TITLE
         else:
@@ -305,10 +301,10 @@ class View(webapp2.RequestHandler):
       if cgi.escape(self.request.get('submita')):
         #Modified an answer
         if aid:
-          answer = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+          answer = Answer.get_by_id(int(aid),parent=qalist_key(DEFAULT_QALIST_NAME))
         #Created a new answer
         else:
-          answer = Answer(parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+          answer = Answer(parent=qalist_key(DEFAULT_QALIST_NAME))
           answer.author = users.get_current_user()
           answer.authorID = users.get_current_user().user_id()
           answer.voteCount = 0
@@ -321,7 +317,7 @@ class View(webapp2.RequestHandler):
         answer.questionID = int(qid)
         answer.put()
 
-      quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      quest = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
 
       qvotes_query = Vote.query(Vote.entityID == int(qid), ancestor=votelist_key(DEFAULT_VOTELIST_NAME))
       qvotes = qvotes_query.fetch()
@@ -338,11 +334,11 @@ class View(webapp2.RequestHandler):
         for avote in avotes:
           avoteCount = avoteCount + avote.voteNumber
 
-        answer_to_update = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+        answer_to_update = Answer.get_by_id(int(aid),parent=qalist_key(DEFAULT_QALIST_NAME))
         answer_to_update.voteCount = avoteCount
         answer_to_update.put()
 
-      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
+      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Answer.voteCount)
       answers = answers_query.fetch()
             
       view_values = {
@@ -361,7 +357,7 @@ class ViewPermalink(webapp2.RequestHandler):
     def get(self):
       header(self)
       qid = cgi.escape(self.request.get('qid'))
-      quest = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      quest = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
       permalink_values = {
         'quest' : quest,
       }
@@ -374,7 +370,7 @@ class ViewTaggedQuestions(webapp2.RequestHandler):
       header(self)
       tag = cgi.escape(self.request.get('tag'))
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(Question.tags == tag, ancestor=questionlist_key(DEFAULT_QUESTIONLIST_NAME)).order(-Question.modifiedtime)
+      questions_query = Question.query(Question.tags == tag, ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.modifiedtime)
       questions, next_tag_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_tag_curs:
@@ -398,7 +394,7 @@ class EditQuestion(webapp2.RequestHandler):
     def get(self):
       header(self)
       qid = cgi.escape(self.request.get('qid'))
-      question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
+      question = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
       question_tags = ''
       question_content = unconvertLinks(question.content)
       if users.get_current_user():
@@ -426,7 +422,7 @@ class EditAnswer(webapp2.RequestHandler):
       header(self)
       aid = cgi.escape(self.request.get('aid'))
       qid = cgi.escape(self.request.get('qid'))
-      answer = Answer.get_by_id(int(aid),parent=answerlist_key(DEFAULT_ANSWERLIST_NAME))
+      answer = Answer.get_by_id(int(aid),parent=qalist_key(DEFAULT_QALIST_NAME))
       answer_content = unconvertLinks(answer.content)
       if users.get_current_user():
         if users.get_current_user().user_id() != answer.authorID:
@@ -465,8 +461,8 @@ class RSSHandler(webapp2.RequestHandler):
     def get(self):
       self.response.headers['Content-Type'] = 'text/xml'
       qid = cgi.escape(self.request.get('qid'))
-      question = Question.get_by_id(int(qid),parent=questionlist_key(DEFAULT_QUESTIONLIST_NAME))
-      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=answerlist_key(DEFAULT_ANSWERLIST_NAME)).order(-Answer.voteCount)
+      question = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
+      answers_query = Answer.query(Answer.questionID == int(qid), ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Answer.voteCount)
       answers = answers_query.fetch()
       site_url = self.request.host_url
 
