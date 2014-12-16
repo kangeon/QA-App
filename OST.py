@@ -382,7 +382,7 @@ class ViewTaggedQuestions(webapp2.RequestHandler):
       header(self)
       tag = cgi.escape(self.request.get('tag'))
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(Question.tags == tag, ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.modifiedtime)
+      questions_query = Question.query(Question.tags == tag, ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.lastactivetime)
       questions, next_tag_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_tag_curs:

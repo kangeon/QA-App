@@ -14,26 +14,7 @@ indexes:
   ancestor: yes
   properties:
   - name: questionID
-  - name: modifiedtime
-    direction: desc
-
-- kind: Answer
-  ancestor: yes
-  properties:
-  - name: questionID
   - name: voteCount
-    direction: desc
-
-- kind: Greeting
-  ancestor: yes
-  properties:
-  - name: date
-    direction: desc
-
-- kind: Question
-  ancestor: yes
-  properties:
-  - name: creationtime
     direction: desc
 
 - kind: Question
@@ -45,12 +26,6 @@ indexes:
 - kind: Question
   ancestor: yes
   properties:
-  - name: modifiedtime
-    direction: desc
-
-- kind: Question
-  ancestor: yes
-  properties:
   - name: tags
-  - name: modifiedtime
+  - name: lastactivetime
     direction: desc
