@@ -39,6 +39,12 @@ indexes:
 - kind: Question
   ancestor: yes
   properties:
+  - name: lastactivetime
+    direction: desc
+
+- kind: Question
+  ancestor: yes
+  properties:
   - name: modifiedtime
     direction: desc
 

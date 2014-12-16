@@ -2,6 +2,7 @@ import cgi
 import os
 import urllib
 import re
+import datetime
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -49,7 +50,8 @@ class Question(ndb.Model):
     title = ndb.StringProperty(indexed=False)
     content = ndb.TextProperty()
     creationtime = ndb.DateTimeProperty(auto_now_add=True)
-    modifiedtime = ndb.DateTimeProperty(auto_now=True)
+    modifiedtime = ndb.DateTimeProperty(auto_now=False)
+    lastactivetime = ndb.DateTimeProperty(auto_now=False)
     tags = ndb.StringProperty(repeated=True)
 
 class Answer(ndb.Model):
@@ -59,7 +61,7 @@ class Answer(ndb.Model):
     title = ndb.StringProperty(indexed=False)
     content = ndb.TextProperty()
     creationtime = ndb.DateTimeProperty(auto_now_add=True)
-    modifiedtime = ndb.DateTimeProperty(auto_now=True)
+    modifiedtime = ndb.DateTimeProperty(auto_now=False)
     questionID = ndb.IntegerProperty()
     voteCount = ndb.IntegerProperty()
 
@@ -95,7 +97,7 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
       header(self)
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.modifiedtime)
+      questions_query = Question.query(ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.lastactivetime)
       questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_curs:
@@ -130,10 +132,12 @@ class MainPage(webapp2.RequestHandler):
         for idx in range(0, len(tagslist)):
           tagslist[idx] = tagslist[idx].strip()
         question.tags = tagslist;
+        question.modifiedtime = datetime.datetime.now()
+        question.lastactivetime = datetime.datetime.now()
         question.put()
 
       curs = Cursor(urlsafe=self.request.get('cursor'))
-      questions_query = Question.query(ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.modifiedtime)
+      questions_query = Question.query(ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Question.lastactivetime)
       questions, next_curs, more = questions_query.fetch_page(10, start_cursor=curs)
 
       if more and next_curs:
@@ -228,6 +232,12 @@ class View(webapp2.RequestHandler):
       qid = cgi.escape(self.request.get('qid'))
       aid = cgi.escape(self.request.get('aid'))
 
+      #If cancelq is not empty something happened so update question's lastactivetime
+      if not cgi.escape(self.request.get('cancelq')):
+        question = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
+        question.lastactivetime = datetime.datetime.now()
+        question.put()
+
       #Edited a Question
       if cgi.escape(self.request.get('submitq')):
         question = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
@@ -241,6 +251,7 @@ class View(webapp2.RequestHandler):
         for idx in range(0, len(tagslist)):
           tagslist[idx] = tagslist[idx].strip()
         question.tags = tagslist;
+        question.modifiedtime = datetime.datetime.now()
         question.put()
 
       #Voted on Question
@@ -315,6 +326,7 @@ class View(webapp2.RequestHandler):
         content = cgi.escape(self.request.get('acontent'))
         answer.content = convertLinks(content)
         answer.questionID = int(qid)
+        answer.modifiedtime = datetime.datetime.now()
         answer.put()
 
       quest = Question.get_by_id(int(qid),parent=qalist_key(DEFAULT_QALIST_NAME))
@@ -340,7 +352,7 @@ class View(webapp2.RequestHandler):
 
       answers_query = Answer.query(Answer.questionID == int(qid), ancestor=qalist_key(DEFAULT_QALIST_NAME)).order(-Answer.voteCount)
       answers = answers_query.fetch()
-            
+
       view_values = {
         'user_logged_on' : user_logged_on,
         'quest' : quest,
